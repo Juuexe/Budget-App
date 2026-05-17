@@ -4,9 +4,6 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 
-#load environment var
-load_dotenv()
-
 # --- ADD THESE TWO LINES TEMPORARILY ---
 print("--- DEBUG MONGO URI START ---")
 print(os.getenv('MONGO_URI'))
@@ -15,9 +12,15 @@ print("--- DEBUG MONGO URI END ---")
 app = Flask(__name__)
 CORS(app)  # allow requests from frontend
 
+#load environment var
+load_dotenv()
+
 #MongoDb connection
 MONGO_URI = os.getenv('MONGO_URI')
 client = MongoClient(MONGO_URI)
+
+print("FLASK SEES:", repr(MONGO_URI)) 
+
 db = client["budgetDB"]
 transactions_collection = db["transactions"]
 
