@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient 
+from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
 
@@ -59,6 +60,18 @@ def get_transactions():
         })
 
     return jsonify(transactions)
+
+# Delete transaction
+@app.route("/api/transactions/<id>", methods=["DELETE"])
+def delete_transaction(id):
+
+    transactions_collection.delete_one({
+        "_id": ObjectId(id)
+    })
+
+    return jsonify({
+        "message": "Transaction deleted!"
+    })
 
 if __name__ == "__main__":
     app.run(debug=True)

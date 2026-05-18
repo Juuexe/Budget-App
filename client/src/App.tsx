@@ -48,12 +48,31 @@ function App() {
     fetchTransactions();
   };
 
+//Delete transaction
+  const deleteTransaction = async (id: string) => {
+  await fetch(`http://127.0.0.1:5000/api/transactions/${id}`, {
+    method: "DELETE",
+  });
+
+  fetchTransactions();
+};
+
 
    // Total Spending
   const totalSpending = transactions.reduce(
     (total, transaction) => total + transaction.amount,
     0
   );
+
+  const categoryTotals: { [key: string]: number } = {};
+
+  transactions.forEach((transaction) => {
+    if (categoryTotals[transaction.category]) {
+    categoryTotals[transaction.category] += transaction.amount;
+  } else {
+    categoryTotals[transaction.category] = transaction.amount;
+  }
+  });
 
   return (
     <div className="app">
@@ -89,6 +108,24 @@ function App() {
         <button onClick={addTransaction}>Add Transaction</button>
       </div>
 
+
+
+
+    <div className="analytics-section">
+      <h2>Category Analytics</h2>
+
+  <div className="analytics-grid">
+    {Object.entries(categoryTotals).map(([category, total]) => (
+      <div className="analytics-card" key={category}>
+        <h3>{category}</h3>
+        <p>${total}</p>
+      </div>
+    ))}
+  </div>
+</div> 
+
+
+
       <div className="transactions-section">
         <h2>Recent Transactions</h2>
 
@@ -99,7 +136,16 @@ function App() {
               <span>{transaction.category}</span>
             </div>
 
-            <p className="amount">${transaction.amount}</p>
+            <div className="transaction-actions">
+                <p className="amount">${transaction.amount}</p>
+
+                <button
+                   className="delete-button"
+                   onClick={() => deleteTransaction(transaction.id!)}
+                 >
+                   Delete
+                </button>
+            </div>
           </div>
         ))}
       </div>
