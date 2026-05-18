@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import "./App.css";
 
 interface Transaction {
@@ -65,7 +71,6 @@ function App() {
   );
 
   const categoryTotals: { [key: string]: number } = {};
-
   transactions.forEach((transaction) => {
     if (categoryTotals[transaction.category]) {
     categoryTotals[transaction.category] += transaction.amount;
@@ -73,6 +78,23 @@ function App() {
     categoryTotals[transaction.category] = transaction.amount;
   }
   });
+
+  const chartData = Object.entries(categoryTotals).map(
+  ([category, total]) => ({
+    name: category,
+    value: total,
+  })
+  );
+
+  const COLORS = [
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#14b8a6",
+  ];
+
 
   return (
     <div className="app">
@@ -124,6 +146,34 @@ function App() {
   </div>
 </div> 
 
+
+
+<div className="chart-section">
+  <h2>Spending Breakdown</h2>
+
+  <div className="chart-container">
+    <ResponsiveContainer width="100%" height={350}>
+      <PieChart>
+        <Pie
+          data={chartData}
+          dataKey="value"
+          nameKey="name"
+          outerRadius={120}
+          label
+        >
+          {chartData.map((entry, index) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={COLORS[index % COLORS.length]}
+            />
+          ))}
+        </Pie>
+
+        <Tooltip />
+      </PieChart>
+    </ResponsiveContainer>
+  </div>
+</div>
 
 
       <div className="transactions-section">
