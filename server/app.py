@@ -36,7 +36,8 @@ def add_transaction():
     transaction = {
         "title": data["title"],
         "amount": data["amount"],
-        "category": data["category"]
+        "category": data["category"],
+        "date": data["date"]
     }
 
     result = transactions_collection.insert_one(transaction)
@@ -56,7 +57,8 @@ def get_transactions():
             "id": str(transaction["_id"]),
             "title": transaction["title"],
             "amount": transaction["amount"],
-            "category": transaction["category"]
+            "category": transaction["category"],
+            "date": transaction.get("date", "")
         })
 
     return jsonify(transactions)

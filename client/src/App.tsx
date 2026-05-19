@@ -5,6 +5,11 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 import "./App.css";
 
@@ -13,6 +18,7 @@ interface Transaction {
   title: string;
   amount: number;
   category: string;
+  date: string;
 }
 
 function App() {
@@ -21,6 +27,7 @@ function App() {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
+  const [date, setDate] = useState("");
 
   // Fetch transactions
   const fetchTransactions = async () => {
@@ -44,12 +51,14 @@ function App() {
         title,
         amount: Number(amount),
         category,
+        date,
       }),
     });
 
     setTitle("");
     setAmount("");
     setCategory("");
+    setDate("");
 
     fetchTransactions();
   };
@@ -86,6 +95,29 @@ function App() {
   })
   );
 
+  const monthlyTotals: { [key: string]: number } = {};
+
+  transactions.forEach((transaction) => {
+  if (!transaction.date) return;
+
+  const month = new Date(transaction.date).toLocaleString("default", {
+    month: "short",
+  });
+
+  if (monthlyTotals[month]) {
+    monthlyTotals[month] += transaction.amount;
+  } else {
+    monthlyTotals[month] = transaction.amount;
+  }
+  });
+
+  const lineChartData = Object.entries(monthlyTotals).map(
+  ([month, total]) => ({
+    month,
+    total,
+  })
+  );
+  
   const COLORS = [
   "#3b82f6",
   "#10b981",
@@ -125,6 +157,13 @@ function App() {
           placeholder="Category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
+        />
+
+
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
         />
 
         <button onClick={addTransaction}>Add Transaction</button>
@@ -175,6 +214,31 @@ function App() {
   </div>
 </div>
 
+<div className="chart-section">
+  <h2>Monthly Spending Trend</h2>
+
+  <div className="chart-container">
+    <ResponsiveContainer width="100%" height={350}>
+      <LineChart data={lineChartData}>
+        <CartesianGrid strokeDasharray="3 3" />
+
+        <XAxis dataKey="month" />
+
+        <YAxis />
+
+        <Tooltip />
+
+        <Line
+          type="monotone"
+          dataKey="total"
+          stroke="#3b82f6"
+          strokeWidth={3}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  </div>
+</div>
+
 
       <div className="transactions-section">
         <h2>Recent Transactions</h2>
@@ -183,7 +247,10 @@ function App() {
           <div className="transaction-card" key={transaction.id}>
             <div>
               <h3>{transaction.title}</h3>
-              <span>{transaction.category}</span>
+              <div className="transaction-info">
+                <span>{transaction.category}</span>
+                <small>{transaction.date}</small>
+              </div>
             </div>
 
             <div className="transaction-actions">

@@ -57,7 +57,7 @@ body {
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 9px;
-  height:90px;
+  height:auto;
   flex-direction: column;
   max-width:200px;
 }
@@ -137,4 +137,14 @@ body {
   padding: 20px;
   border-radius: 16px;
   height: 400px;
+}
+
+.transaction-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transaction-info small {
+  color: #94a3b8;
 }
