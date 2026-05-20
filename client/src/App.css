@@ -148,3 +148,70 @@ body {
 .transaction-info small {
   color: #94a3b8;
 }
+
+.budget-section {
+  margin-bottom: 40px;
+}
+
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.budget-card {
+  background-color: #1e293b;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.budget-card h3 {
+  margin-top: 0;
+}
+
+.budget-card p {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.budget-warning {
+  display: inline-block;
+  margin-top: 10px;
+  background-color: #ef4444;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.budget-safe {
+  display: inline-block;
+  margin-top: 10px;
+  background-color: #10b981;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.budget-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+
+.budget-form input {
+  flex: 1;
+  min-width: 180px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background-color: #334155;
+  color: white;
+}
+
+.budget-form button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 10px;
+  background-color: #3b82f6;
+  color: white;
+  cursor: pointer;
+}

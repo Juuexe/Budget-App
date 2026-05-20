@@ -28,6 +28,8 @@ function App() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState("");
+  const [budgetCategory, setBudgetCategory] = useState("");
+  const [budgetAmount, setBudgetAmount] = useState("");
 
   // Fetch transactions
   const fetchTransactions = async () => {
@@ -63,6 +65,19 @@ function App() {
     fetchTransactions();
   };
 
+
+  const updateBudget = () => {
+  if (!budgetCategory || !budgetAmount) return;
+
+  setBudgets({
+    ...budgets,
+    [budgetCategory]: Number(budgetAmount),
+  });
+
+  setBudgetCategory("");
+  setBudgetAmount("");
+};
+
 //Delete transaction
   const deleteTransaction = async (id: string) => {
   await fetch(`http://127.0.0.1:5000/api/transactions/${id}`, {
@@ -86,6 +101,14 @@ function App() {
   } else {
     categoryTotals[transaction.category] = transaction.amount;
   }
+  });
+
+
+  const [budgets, setBudgets] = useState<{ [key: string]: number }>({
+  Food: 200,
+  Entertainment: 150,
+  Shopping: 300,
+  Transportation: 100,
   });
 
   const chartData = Object.entries(categoryTotals).map(
@@ -136,6 +159,59 @@ function App() {
         <h2>Total Spending</h2>
         <p>${totalSpending}</p>
       </div>
+
+
+      <div className="budget-section">
+         <h2>Budget Limits</h2>
+
+         <div className="budget-form">
+  <input
+    type="text"
+    placeholder="Category"
+    value={budgetCategory}
+    onChange={(e) => setBudgetCategory(e.target.value)}
+  />
+
+  <input
+    type="number"
+    placeholder="Budget Amount"
+    value={budgetAmount}
+    onChange={(e) => setBudgetAmount(e.target.value)}
+  />
+
+  <button onClick={updateBudget}>
+    Save Budget
+  </button>
+</div>
+
+        <div className="budget-grid">
+          {Object.entries(budgets).map(([category, limit]) => {
+          const spent = categoryTotals[category] || 0;
+
+          const isOverBudget = spent > limit;
+
+          return (
+             <div className="budget-card" key={category}>
+              <h3>{category}</h3>
+
+              <p>
+                 ${spent} / ${limit}
+              </p>
+
+              <span
+                className={
+                 isOverBudget ? "budget-warning" : "budget-safe"
+                 }
+               >
+            {isOverBudget ? "Over Budget" : "Within Budget"}
+          </span>
+         </div>
+           );
+         })}
+        </div>
+      </div>
+
+
 
       <div className="form-container">
         <input
