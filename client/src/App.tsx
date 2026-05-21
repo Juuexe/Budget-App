@@ -413,28 +413,42 @@ const deleteBudget = async (category: string) => {
       <div id="transactions" className="transactions-section">
         <h2>Recent Transactions</h2>
 
-        {transactions.map((transaction) => (
-          <div className="transaction-card" key={transaction.id}>
-            <div>
-              <h3>{transaction.title}</h3>
-              <div className="transaction-info">
-                <span>{transaction.category}</span>
-                <small>{transaction.date}</small>
-              </div>
-            </div>
+<table className="transactions-table">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Amount</th>
+      <th>Category</th>
+      <th>Date</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
 
-            <div className="transaction-actions">
-                <p className="amount">${transaction.amount}</p>
+  <tbody>
+    {transactions.map((transaction) => (
+      <tr key={transaction.id}>
+        <td>{transaction.title}</td>
 
-                <button
-                   className="delete-button"
-                   onClick={() => deleteTransaction(transaction.id!)}
-                 >
-                   Delete
-                </button>
-            </div>
-          </div>
-        ))}
+        <td>${transaction.amount}</td>
+
+        <td>{transaction.category}</td>
+
+        <td>{transaction.date}</td>
+
+        <td>
+          <button
+            className="delete-button"
+            onClick={() =>
+              deleteTransaction(transaction.id!)
+            }
+          >
+            Delete
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
       </div>
     </div>
   );

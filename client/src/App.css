@@ -308,3 +308,27 @@ b.delete-budget-button {
   padding: 8px 14px;
   border-radius: 8px;
 }
+
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1e293b;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.transactions-table th {
+  background-color: #334155;
+  padding: 16px;
+  text-align: left;
+}
+
+.transactions-table td {
+  padding: 16px;
+  border-top: 1px solid #475569;
+}
+
+.transactions-table tr:hover {
+  background-color: #273549;
+}
