@@ -43,6 +43,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  
 
   // Fetch transactions
   const fetchTransactions = async () => {
@@ -69,6 +70,7 @@ function App() {
     fetchBudgets();
   }, []);
 
+  
   // Add transaction
   const addTransaction = async () => {
     await addTransactionAPI({
@@ -236,7 +238,7 @@ const deleteBudget = async (category: string) => {
   </button>
 </div>
 
-      
+    <div className="top-grid">
       <div id="overview" className="summary-card">
         <h2>Total Spending</h2>
         <p>${totalSpending}</p>
@@ -261,8 +263,11 @@ const deleteBudget = async (category: string) => {
         : "Spending looks normal"}
       </span>
       </div>
+    </div>
 
 
+
+    <div className="middle-grid">
       <BudgetSection
         budgets={budgets}
         categoryTotals={categoryTotals}
@@ -274,6 +279,8 @@ const deleteBudget = async (category: string) => {
         deleteBudget={deleteBudget}
       />
 
+      <AnalyticsSection categoryTotals={categoryTotals} />
+    </div>
 
       <TransactionForm
         title={title}
@@ -288,7 +295,7 @@ const deleteBudget = async (category: string) => {
       />
 
 
-      <AnalyticsSection categoryTotals={categoryTotals} />
+      
 
 
       <ChartsSection
