@@ -1,4 +1,19 @@
 import React, { useEffect, useState } from "react";
+import TransactionTable from "./components/TransactionTable";
+import BudgetSection from "./components/BudgetSection";
+import AnalyticsSection from "./components/AnalyticsSection";
+import ChartsSection from "./components/ChartsSection";
+import TransactionForm from "./components/TransactionForm";
+import { Transaction } from "./types";
+
+import {
+  fetchTransactionsAPI,
+  addTransactionAPI,
+  deleteTransactionAPI,
+  fetchBudgetsAPI,
+  saveBudgetAPI,
+  deleteBudgetAPI,
+} from "./services/api";
 import {
   PieChart,
   Pie,
@@ -13,13 +28,7 @@ import {
 } from "recharts";
 import "./App.css";
 
-interface Transaction {
-  id?: string;
-  title: string;
-  amount: number;
-  category: string;
-  date: string;
-}
+
 
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -30,18 +39,28 @@ function App() {
   const [date, setDate] = useState("");
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // Fetch transactions
   const fetchTransactions = async () => {
-    const response = await fetch("http://127.0.0.1:5000/api/transactions");
-    const data = await response.json();
+  try {
+    setLoading(true);
+    const data = await fetchTransactionsAPI();
     setTransactions(data);
+    setError("");
+  } catch {
+    setError("Could not load transactions. Make sure Flask is running.");
+  } finally {
+    setLoading(false);
+  }
   };
 
   // Fetch Budgets
-  const fetchBudgets = async () => {
-  const response = await fetch("http://127.0.0.1:5000/api/budgets");
-  const data = await response.json();
+ const fetchBudgets = async () => {
+  const data = await fetchBudgetsAPI();
   setBudgets(data);
 };
 
@@ -52,18 +71,12 @@ function App() {
 
   // Add transaction
   const addTransaction = async () => {
-    await fetch("http://127.0.0.1:5000/api/transactions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        title,
-        amount: Number(amount),
-        category,
-        date,
-      }),
-    });
+    await addTransactionAPI({
+  title,
+  amount: Number(amount),
+  category: category.trim(),
+  date,
+});
 
     setTitle("");
     setAmount("");
@@ -77,16 +90,10 @@ function App() {
 const updateBudget = async () => {
   if (!budgetCategory || !budgetAmount) return;
 
-  await fetch("http://127.0.0.1:5000/api/budgets", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      category: budgetCategory,
-      limit: Number(budgetAmount),
-    }),
-  });
+  await saveBudgetAPI(
+  budgetCategory.trim(),
+  Number(budgetAmount)
+  );
 
   setBudgetCategory("");
   setBudgetAmount("");
@@ -96,21 +103,14 @@ const updateBudget = async () => {
 
 
 const deleteBudget = async (category: string) => {
-  await fetch(
-    `http://127.0.0.1:5000/api/budgets/${encodeURIComponent(category.trim())}`,
-    {
-      method: "DELETE",
-    }
-  );
+  await deleteBudgetAPI(category);
 
   fetchBudgets();
 };
 
 //Delete transaction
   const deleteTransaction = async (id: string) => {
-  await fetch(`http://127.0.0.1:5000/api/transactions/${id}`, {
-    method: "DELETE",
-  });
+ await deleteTransactionAPI(id);
 
   fetchTransactions();
 };
@@ -197,10 +197,25 @@ const deleteBudget = async (category: string) => {
   "#14b8a6",
   ];
 
+  const filteredTransactions = transactions.filter((transaction) => {
+  const matchesSearch = transaction.title
+    .toLowerCase()
+    .includes(searchTerm.toLowerCase());
+
+  const matchesCategory =
+    selectedCategory === "All" ||
+    transaction.category === selectedCategory;
+
+  return matchesSearch && matchesCategory;
+  });
+
 
   return (
     <div className="app">
       <h1 className="main-title">Smart Budget Dashboard</h1>
+      {loading && <p className="status-message">Loading...</p>}
+
+      {error && <p className="error-message">{error}</p>}
 
 
      <div className="nav-buttons">
@@ -248,207 +263,73 @@ const deleteBudget = async (category: string) => {
       </div>
 
 
-      <div id="budgets" className="budget-section">
-         <h2>Budget Limits</h2>
-
-         <div className="budget-form">
-  <input
-    type="text"
-    placeholder="Category"
-    value={budgetCategory}
-    onChange={(e) => setBudgetCategory(e.target.value)}
-  />
-
-  <input
-    type="number"
-    placeholder="Budget Amount"
-    value={budgetAmount}
-    onChange={(e) => setBudgetAmount(e.target.value)}
-  />
-
-  <button onClick={updateBudget}>
-    Save Budget
-  </button>
-</div>
-
-        <div className="budget-grid">
-          {Object.entries(budgets).map(([category, limit]) => {
-          const spent = categoryTotals[category] || 0;
-
-          const isOverBudget = spent > limit;
-
-          return (
-             <div className="budget-card" key={category}>
-  <button
-    className="delete-budget-button"
-    onClick={() => deleteBudget(category)}
-    >
-      ×
-    </button>
-
-   <h3>{category}</h3>
-
-   <p>
-     ${spent} / ${limit}
-   </p>
-
-  <span
-    className={
-      isOverBudget ? "budget-warning" : "budget-safe"
-    }
-  >
-    {isOverBudget ? "Over Budget" : "Within Budget"}
-  </span>
-</div>
-           );
-         })}
-        </div>
-      </div>
+      <BudgetSection
+        budgets={budgets}
+        categoryTotals={categoryTotals}
+        budgetCategory={budgetCategory}
+        budgetAmount={budgetAmount}
+        setBudgetCategory={setBudgetCategory}
+        setBudgetAmount={setBudgetAmount}
+        updateBudget={updateBudget}
+        deleteBudget={deleteBudget}
+      />
 
 
-
-      <div className="form-container">
-        <input
-          type="text"
-          placeholder="Transaction Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-
-        <input
-          type="number"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-
-        <input
-          type="text"
-          placeholder="Category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        />
+      <TransactionForm
+        title={title}
+        amount={amount}
+        category={category}
+        date={date}
+        setTitle={setTitle}
+        setAmount={setAmount}
+        setCategory={setCategory}
+        setDate={setDate}
+        addTransaction={addTransaction}
+      />
 
 
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-
-        <button onClick={addTransaction}>Add Transaction</button>
-      </div>
+      <AnalyticsSection categoryTotals={categoryTotals} />
 
 
-
-
-    <div id="analytics" className="analytics-section">
-      <h2>Category Analytics</h2>
-
-  <div className="analytics-grid">
-    {Object.entries(categoryTotals).map(([category, total]) => (
-      <div className="analytics-card" key={category}>
-        <h3>{category}</h3>
-        <p>${total}</p>
-      </div>
-    ))}
-  </div>
-</div> 
-
-
-
-<div className="chart-section">
-  <h2>Spending Breakdown</h2>
-
-  <div className="chart-container">
-    <ResponsiveContainer width="100%" height={350}>
-      <PieChart>
-        <Pie
-          data={chartData}
-          dataKey="value"
-          nameKey="name"
-          outerRadius={120}
-          label
-        >
-          {chartData.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={COLORS[index % COLORS.length]}
-            />
-          ))}
-        </Pie>
-
-        <Tooltip />
-      </PieChart>
-    </ResponsiveContainer>
-  </div>
-</div>
-
-<div className="chart-section">
-  <h2>Monthly Spending Trend</h2>
-
-  <div className="chart-container">
-    <ResponsiveContainer width="100%" height={350}>
-      <LineChart data={lineChartData}>
-        <CartesianGrid strokeDasharray="3 3" />
-
-        <XAxis dataKey="month" />
-
-        <YAxis />
-
-        <Tooltip />
-
-        <Line
-          type="monotone"
-          dataKey="total"
-          stroke="#3b82f6"
-          strokeWidth={3}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  </div>
-</div>
+      <ChartsSection
+        chartData={chartData}
+        lineChartData={lineChartData}
+      />
 
 
       <div id="transactions" className="transactions-section">
         <h2>Recent Transactions</h2>
 
-<table className="transactions-table">
-  <thead>
-    <tr>
-      <th>Title</th>
-      <th>Amount</th>
-      <th>Category</th>
-      <th>Date</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
+        <div className="transaction-controls">
+  <input
+    type="text"
+    placeholder="Search transactions..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
 
-  <tbody>
-    {transactions.map((transaction) => (
-      <tr key={transaction.id}>
-        <td>{transaction.title}</td>
+  <select
+    value={selectedCategory}
+    onChange={(e) => setSelectedCategory(e.target.value)}
+  >
+    <option value="All">All Categories</option>
 
-        <td>${transaction.amount}</td>
-
-        <td>{transaction.category}</td>
-
-        <td>{transaction.date}</td>
-
-        <td>
-          <button
-            className="delete-button"
-            onClick={() =>
-              deleteTransaction(transaction.id!)
-            }
-          >
-            Delete
-          </button>
-        </td>
-      </tr>
+    {Object.keys(categoryTotals).map((category) => (
+      <option key={category} value={category}>
+        {category}
+      </option>
     ))}
-  </tbody>
-</table>
+  </select>
+</div>
+
+{filteredTransactions.length === 0 ? (
+  <p className="empty-message">No transactions found.</p>
+) : (
+  <TransactionTable
+    transactions={filteredTransactions}
+    deleteTransaction={deleteTransaction}
+  />
+)}
       </div>
     </div>
   );

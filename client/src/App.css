@@ -332,3 +332,38 @@ b.delete-budget-button {
 .transactions-table tr:hover {
   background-color: #273549;
 }
+
+.transaction-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.transaction-controls input,
+.transaction-controls select {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background-color: #1e293b;
+  color: white;
+}
+
+.status-message {
+  text-align: center;
+  color: #cbd5e1;
+}
+
+.error-message {
+  text-align: center;
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.empty-message {
+  text-align: center;
+  color: #94a3b8;
+  background-color: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
+}
