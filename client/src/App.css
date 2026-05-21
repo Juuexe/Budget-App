@@ -215,3 +215,96 @@ body {
   color: white;
   cursor: pointer;
 }
+
+.nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  background-color: #0f172a;
+  padding: 15px 0;
+  z-index: 10;
+}
+
+.nav-buttons button {
+  background-color: #1e293b;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.nav-buttons button:hover {
+  background-color: #334155;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.budget-card {
+  position: relative;
+}
+
+b.delete-budget-button {
+  position: absolute;
+  top: 10px;
+  right: 100px;
+
+  background: transparent;
+  border: none;
+
+  color: #080808;
+  font-size: 20px;
+
+  cursor: pointer;
+}
+
+.delete-budget-button:hover {
+  color: #ef4444;
+}
+
+.prediction-card {
+  background-color: #1e293b;
+  padding: 25px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.prediction-card h2 {
+  margin-top: 0;
+}
+
+.prediction-card p {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.prediction-card span {
+  display: inline-block;
+  margin-top: 10px;
+  background-color: #334155;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.prediction-warning {
+  display: inline-block;
+  margin-top: 10px;
+  background-color: #ef4444;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.prediction-safe {
+  display: inline-block;
+  margin-top: 10px;
+  background-color: #10b981;
+  padding: 8px 14px;
+  border-radius: 8px;
+}

@@ -21,6 +21,7 @@ client = MongoClient(MONGO_URI)
 
 db = client["budgetDB"]
 transactions_collection = db["transactions"]
+budgets_collection = db["budgets"]
 
 #Home route
 @app.route("/")
@@ -74,6 +75,43 @@ def delete_transaction(id):
     return jsonify({
         "message": "Transaction deleted!"
     })
+
+
+# Get all budgets
+@app.route("/api/budgets", methods=["GET"])
+def get_budgets():
+    budgets = {}
+
+    for budget in budgets_collection.find():
+        budgets[budget["category"]] = budget["limit"]
+
+    return jsonify(budgets)
+
+
+# Add or update budget
+@app.route("/api/budgets", methods=["POST"])
+def save_budget():
+    data = request.json
+
+    budgets_collection.update_one(
+        {"category": data["category"]},
+        {"$set": {"limit": data["limit"]}},
+        upsert=True
+    )
+
+    return jsonify({"message": "Budget saved!"})
+
+
+@app.route("/api/budgets/<category>", methods=["DELETE"])
+def delete_budget_route(category):
+    category = category.strip()
+
+    budgets_collection.delete_one({
+        "category": category
+    })
+
+    return jsonify({"message": "Budget deleted!"})
+
 
 if __name__ == "__main__":
     app.run(debug=True)

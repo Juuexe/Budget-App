@@ -38,8 +38,16 @@ function App() {
     setTransactions(data);
   };
 
+  // Fetch Budgets
+  const fetchBudgets = async () => {
+  const response = await fetch("http://127.0.0.1:5000/api/budgets");
+  const data = await response.json();
+  setBudgets(data);
+};
+
   useEffect(() => {
     fetchTransactions();
+    fetchBudgets();
   }, []);
 
   // Add transaction
@@ -66,16 +74,36 @@ function App() {
   };
 
 
-  const updateBudget = () => {
+const updateBudget = async () => {
   if (!budgetCategory || !budgetAmount) return;
 
-  setBudgets({
-    ...budgets,
-    [budgetCategory]: Number(budgetAmount),
+  await fetch("http://127.0.0.1:5000/api/budgets", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      category: budgetCategory,
+      limit: Number(budgetAmount),
+    }),
   });
 
   setBudgetCategory("");
   setBudgetAmount("");
+
+  fetchBudgets();
+};
+
+
+const deleteBudget = async (category: string) => {
+  await fetch(
+    `http://127.0.0.1:5000/api/budgets/${encodeURIComponent(category.trim())}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  fetchBudgets();
 };
 
 //Delete transaction
@@ -104,12 +132,7 @@ function App() {
   });
 
 
-  const [budgets, setBudgets] = useState<{ [key: string]: number }>({
-  Food: 200,
-  Entertainment: 150,
-  Shopping: 300,
-  Transportation: 100,
-  });
+  const [budgets, setBudgets] = useState<{ [key: string]: number }>({});
 
   const chartData = Object.entries(categoryTotals).map(
   ([category, total]) => ({
@@ -140,6 +163,30 @@ function App() {
     total,
   })
   );
+
+
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  const currentDay = currentDate.getDate();
+
+  const currentMonthSpending = transactions
+  .filter((transaction) => {
+    const transactionDate = new Date(transaction.date);
+
+    return (
+      transactionDate.getMonth() === currentMonth &&
+      transactionDate.getFullYear() === currentYear
+    );
+  })
+  .reduce((total, transaction) => total + transaction.amount, 0);
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  const projectedMonthlySpending =
+  currentDay > 0
+    ? (currentMonthSpending / currentDay) * daysInMonth
+    : currentMonthSpending;
   
   const COLORS = [
   "#3b82f6",
@@ -155,13 +202,53 @@ function App() {
     <div className="app">
       <h1 className="main-title">Smart Budget Dashboard</h1>
 
-      <div className="summary-card">
+
+     <div className="nav-buttons">
+  <button onClick={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth" })}>
+    Overview
+  </button>
+
+  <button onClick={() => document.getElementById("budgets")?.scrollIntoView({ behavior: "smooth" })}>
+    Budgets
+  </button>
+
+  <button onClick={() => document.getElementById("analytics")?.scrollIntoView({ behavior: "smooth" })}>
+    Analytics
+  </button>
+
+  <button onClick={() => document.getElementById("transactions")?.scrollIntoView({ behavior: "smooth" })}>
+    Transactions
+  </button>
+</div>
+
+      
+      <div id="overview" className="summary-card">
         <h2>Total Spending</h2>
         <p>${totalSpending}</p>
       </div>
 
+      <div className="prediction-card">
+        <h2>Spending Prediction</h2>
 
-      <div className="budget-section">
+        <p>Current Month: ${currentMonthSpending.toFixed(2)}</p>
+
+        <p>Projected Month: ${projectedMonthlySpending.toFixed(2)}</p>
+
+       <span
+        className={
+         projectedMonthlySpending > currentMonthSpending * 1.5
+         ? "prediction-warning"
+          : "prediction-safe"
+        }
+        >
+        {projectedMonthlySpending > currentMonthSpending * 1.5
+        ? "High spending risk"
+        : "Spending looks normal"}
+      </span>
+      </div>
+
+
+      <div id="budgets" className="budget-section">
          <h2>Budget Limits</h2>
 
          <div className="budget-form">
@@ -192,20 +279,27 @@ function App() {
 
           return (
              <div className="budget-card" key={category}>
-              <h3>{category}</h3>
+  <button
+    className="delete-budget-button"
+    onClick={() => deleteBudget(category)}
+    >
+      ×
+    </button>
 
-              <p>
-                 ${spent} / ${limit}
-              </p>
+   <h3>{category}</h3>
 
-              <span
-                className={
-                 isOverBudget ? "budget-warning" : "budget-safe"
-                 }
-               >
-            {isOverBudget ? "Over Budget" : "Within Budget"}
-          </span>
-         </div>
+   <p>
+     ${spent} / ${limit}
+   </p>
+
+  <span
+    className={
+      isOverBudget ? "budget-warning" : "budget-safe"
+    }
+  >
+    {isOverBudget ? "Over Budget" : "Within Budget"}
+  </span>
+</div>
            );
          })}
         </div>
@@ -248,7 +342,7 @@ function App() {
 
 
 
-    <div className="analytics-section">
+    <div id="analytics" className="analytics-section">
       <h2>Category Analytics</h2>
 
   <div className="analytics-grid">
@@ -316,7 +410,7 @@ function App() {
 </div>
 
 
-      <div className="transactions-section">
+      <div id="transactions" className="transactions-section">
         <h2>Recent Transactions</h2>
 
         {transactions.map((transaction) => (
