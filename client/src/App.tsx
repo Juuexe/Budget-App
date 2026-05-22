@@ -5,6 +5,7 @@ import AnalyticsSection from "./components/AnalyticsSection";
 import ChartsSection from "./components/ChartsSection";
 import TransactionForm from "./components/TransactionForm";
 import { Transaction } from "./types";
+import Sidebar from "./components/Sidebar";
 
 import {
   fetchTransactionsAPI,
@@ -211,10 +212,32 @@ const deleteBudget = async (category: string) => {
   return matchesSearch && matchesCategory;
   });
 
+ const formattedDate = new Date().toLocaleDateString("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
 
   return (
-    <div className="app">
-      <h1 className="main-title">Smart Budget Dashboard</h1>
+   <div className="dashboard-layout">
+  <Sidebar />
+
+  <div className="main-content">
+       <div className="app">
+     <div className="dashboard-header">
+  <div>
+    <h1 className="main-title">Smart Budget</h1>
+
+    <p className="dashboard-subtitle">
+      Track spending, budgets, and monthly trends.
+    </p>
+  </div>
+
+  <p className="dashboard-date">{formattedDate}</p>
+</div>
+
       {loading && <p className="status-message">Loading...</p>}
 
       {error && <p className="error-message">{error}</p>}
@@ -339,6 +362,8 @@ const deleteBudget = async (category: string) => {
 )}
       </div>
     </div>
+  </div>
+</div>
   );
 }
 

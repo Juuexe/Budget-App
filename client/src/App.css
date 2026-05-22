@@ -394,3 +394,70 @@ b.delete-budget-button {
   border-radius: 16px;
   margin-bottom: 30px;
 }
+
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background-color: #020617;
+  padding: 30px 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar h2 {
+  margin-bottom: 20px;
+}
+
+.sidebar button {
+  background-color: #1e293b;
+  color: white;
+
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar button:hover {
+  background-color: #334155;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 35px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dashboard-subtitle {
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+.dashboard-date {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.main-title {
+  margin: 0;
+}
