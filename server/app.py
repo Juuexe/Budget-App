@@ -1,117 +1,162 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from pymongo import MongoClient 
+from pymongo import MongoClient
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
 
 
-
 app = Flask(__name__)
-CORS(app)  # allow requests from frontend
+CORS(app)
 
-#load environment var
 load_dotenv()
 
-#MongoDb connection
-MONGO_URI = os.getenv('MONGO_URI')
-client = MongoClient(MONGO_URI)
+MONGO_URI = os.getenv("MONGO_URI")
+mongo_client = None
 
- 
 
-db = client["budgetDB"]
-transactions_collection = db["transactions"]
-budgets_collection = db["budgets"]
+def get_db():
+    global mongo_client
 
-#Home route
+    if not MONGO_URI:
+        raise RuntimeError("MONGO_URI environment variable is not set")
+
+    if mongo_client is None:
+        mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+
+    return mongo_client["budgetDB"]
+
+
+def get_transactions_collection():
+    return get_db()["transactions"]
+
+
+def get_budgets_collection():
+    return get_db()["budgets"]
+
+
+def database_error_response(error):
+    return jsonify({
+        "error": "Database connection failed",
+        "details": str(error),
+    }), 500
+
+
 @app.route("/")
 def home():
     return jsonify({"message": "Budget API is running!"})
 
 
-# Add transaction
+@app.route("/api/health")
+def health():
+    try:
+        get_db().client.admin.command("ping")
+        return jsonify({
+            "status": "ok",
+            "database": "connected",
+        })
+    except Exception as error:
+        return database_error_response(error)
+
+
 @app.route("/api/transactions", methods=["POST"])
 def add_transaction():
-    data = request.json
+    try:
+        data = request.json
 
-    transaction = {
-        "title": data["title"],
-        "amount": data["amount"],
-        "category": data["category"],
-        "date": data["date"]
-    }
+        transaction = {
+            "title": data["title"],
+            "amount": data["amount"],
+            "category": data["category"],
+            "date": data["date"],
+        }
 
-    result = transactions_collection.insert_one(transaction)
+        result = get_transactions_collection().insert_one(transaction)
 
-    return jsonify({
-        "message": "Transaction added!",
-        "id": str(result.inserted_id)
-    })
+        return jsonify({
+            "message": "Transaction added!",
+            "id": str(result.inserted_id),
+        })
+    except Exception as error:
+        return database_error_response(error)
 
-# Get all transactions
+
 @app.route("/api/transactions", methods=["GET"])
 def get_transactions():
-    transactions = []
+    try:
+        transactions = []
 
-    for transaction in transactions_collection.find():
-        transactions.append({
-            "id": str(transaction["_id"]),
-            "title": transaction["title"],
-            "amount": transaction["amount"],
-            "category": transaction["category"],
-            "date": transaction.get("date", "")
-        })
+        for transaction in get_transactions_collection().find():
+            transactions.append({
+                "id": str(transaction["_id"]),
+                "title": transaction["title"],
+                "amount": transaction["amount"],
+                "category": transaction["category"],
+                "date": transaction.get("date", ""),
+            })
 
-    return jsonify(transactions)
+        return jsonify(transactions)
+    except Exception as error:
+        return database_error_response(error)
 
-# Delete transaction
+
 @app.route("/api/transactions/<id>", methods=["DELETE"])
 def delete_transaction(id):
+    try:
+        get_transactions_collection().delete_one({
+            "_id": ObjectId(id),
+        })
 
-    transactions_collection.delete_one({
-        "_id": ObjectId(id)
-    })
-
-    return jsonify({
-        "message": "Transaction deleted!"
-    })
+        return jsonify({
+            "message": "Transaction deleted!",
+        })
+    except Exception as error:
+        return database_error_response(error)
 
 
-# Get all budgets
 @app.route("/api/budgets", methods=["GET"])
 def get_budgets():
-    budgets = {}
+    try:
+        budgets = {}
 
-    for budget in budgets_collection.find():
-        budgets[budget["category"]] = budget["limit"]
+        for budget in get_budgets_collection().find():
+            budgets[budget["category"]] = budget["limit"]
 
-    return jsonify(budgets)
+        return jsonify(budgets)
+    except Exception as error:
+        return database_error_response(error)
 
 
-# Add or update budget
 @app.route("/api/budgets", methods=["POST"])
 def save_budget():
-    data = request.json
+    try:
+        data = request.json
 
-    budgets_collection.update_one(
-        {"category": data["category"]},
-        {"$set": {"limit": data["limit"]}},
-        upsert=True
-    )
+        get_budgets_collection().update_one(
+            {"category": data["category"]},
+            {"$set": {"limit": data["limit"]}},
+            upsert=True,
+        )
 
-    return jsonify({"message": "Budget saved!"})
+        return jsonify({"message": "Budget saved!"})
+    except Exception as error:
+        return database_error_response(error)
 
 
 @app.route("/api/budgets/<category>", methods=["DELETE"])
 def delete_budget_route(category):
-    category = category.strip()
+    try:
+        category = category.strip()
 
-    budgets_collection.delete_one({
-        "category": category
-    })
+        get_budgets_collection().delete_one({
+            "category": category,
+        })
 
-    return jsonify({"message": "Budget deleted!"})
+        return jsonify({"message": "Budget deleted!"})
+    except Exception as error:
+        return database_error_response(error)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
