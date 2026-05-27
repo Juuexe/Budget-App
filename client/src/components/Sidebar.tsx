@@ -1,7 +1,13 @@
 function Sidebar() {
   return (
     <div className="sidebar">
-      <h2>Budget App</h2>
+      <div className="brand-lockup">
+        <span>SB</span>
+        <div>
+          <h2>Smart Budget</h2>
+          <p>Money control</p>
+        </div>
+      </div>
 
       <button
         onClick={() =>

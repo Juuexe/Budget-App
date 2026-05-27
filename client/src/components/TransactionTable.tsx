@@ -25,8 +25,10 @@ function TransactionTable({
         {transactions.map((transaction) => (
           <tr key={transaction.id}>
             <td>{transaction.title}</td>
-            <td>${transaction.amount}</td>
-            <td>{transaction.category}</td>
+            <td className="amount-cell">${transaction.amount.toFixed(2)}</td>
+            <td>
+              <span className="category-pill">{transaction.category}</span>
+            </td>
             <td>{transaction.date}</td>
             <td>
               <button

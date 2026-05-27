@@ -15,24 +15,17 @@ import {
   saveBudgetAPI,
   deleteBudgetAPI,
 } from "./services/api";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
 import "./App.css";
 
-
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
 
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [budgets, setBudgets] = useState<{ [key: string]: number }>({});
 
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -44,42 +37,43 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
 
-  // Fetch transactions
   const fetchTransactions = async () => {
-  try {
-    setLoading(true);
-    const data = await fetchTransactionsAPI();
-    setTransactions(data);
-    setError("");
-  } catch {
-    setError("Could not load transactions. Make sure Flask is running.");
-  } finally {
-    setLoading(false);
-  }
+    try {
+      setLoading(true);
+      const data = await fetchTransactionsAPI();
+      setTransactions(data);
+      setError("");
+    } catch {
+      setError("Could not load transactions. Make sure Flask is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Fetch Budgets
- const fetchBudgets = async () => {
-  const data = await fetchBudgetsAPI();
-  setBudgets(data);
-};
+  const fetchBudgets = async () => {
+    try {
+      const data = await fetchBudgetsAPI();
+      setBudgets(data);
+    } catch {
+      setBudgets({});
+    }
+  };
 
   useEffect(() => {
     fetchTransactions();
     fetchBudgets();
   }, []);
 
-  
-  // Add transaction
   const addTransaction = async () => {
+    if (!title || !amount || !category || !date) return;
+
     await addTransactionAPI({
-  title,
-  amount: Number(amount),
-  category: category.trim(),
-  date,
-});
+      title,
+      amount: Number(amount),
+      category: category.trim(),
+      date,
+    });
 
     setTitle("");
     setAmount("");
@@ -89,84 +83,66 @@ function App() {
     fetchTransactions();
   };
 
+  const updateBudget = async () => {
+    if (!budgetCategory || !budgetAmount) return;
 
-const updateBudget = async () => {
-  if (!budgetCategory || !budgetAmount) return;
+    await saveBudgetAPI(budgetCategory.trim(), Number(budgetAmount));
 
-  await saveBudgetAPI(
-  budgetCategory.trim(),
-  Number(budgetAmount)
-  );
+    setBudgetCategory("");
+    setBudgetAmount("");
 
-  setBudgetCategory("");
-  setBudgetAmount("");
+    fetchBudgets();
+  };
 
-  fetchBudgets();
-};
+  const deleteBudget = async (category: string) => {
+    await deleteBudgetAPI(category);
+    fetchBudgets();
+  };
 
-
-const deleteBudget = async (category: string) => {
-  await deleteBudgetAPI(category);
-
-  fetchBudgets();
-};
-
-//Delete transaction
   const deleteTransaction = async (id: string) => {
- await deleteTransactionAPI(id);
+    await deleteTransactionAPI(id);
+    fetchTransactions();
+  };
 
-  fetchTransactions();
-};
-
-
-   // Total Spending
   const totalSpending = transactions.reduce(
     (total, transaction) => total + transaction.amount,
-    0
+    0,
   );
 
   const categoryTotals: { [key: string]: number } = {};
   transactions.forEach((transaction) => {
     if (categoryTotals[transaction.category]) {
-    categoryTotals[transaction.category] += transaction.amount;
-  } else {
-    categoryTotals[transaction.category] = transaction.amount;
-  }
+      categoryTotals[transaction.category] += transaction.amount;
+    } else {
+      categoryTotals[transaction.category] = transaction.amount;
+    }
   });
 
-
-  const [budgets, setBudgets] = useState<{ [key: string]: number }>({});
-
-  const chartData = Object.entries(categoryTotals).map(
-  ([category, total]) => ({
+  const chartData = Object.entries(categoryTotals).map(([category, total]) => ({
     name: category,
     value: total,
-  })
-  );
+  }));
 
   const monthlyTotals: { [key: string]: number } = {};
 
   transactions.forEach((transaction) => {
-  if (!transaction.date) return;
+    if (!transaction.date) return;
 
-  const month = new Date(transaction.date).toLocaleString("default", {
-    month: "short",
+    const month = new Date(transaction.date).toLocaleString("default", {
+      month: "short",
+    });
+
+    if (monthlyTotals[month]) {
+      monthlyTotals[month] += transaction.amount;
+    } else {
+      monthlyTotals[month] = transaction.amount;
+    }
   });
 
-  if (monthlyTotals[month]) {
-    monthlyTotals[month] += transaction.amount;
-  } else {
-    monthlyTotals[month] = transaction.amount;
-  }
-  });
-
-  const lineChartData = Object.entries(monthlyTotals).map(
-  ([month, total]) => ({
+  const lineChartData = Object.entries(monthlyTotals).map(([month, total]) => ({
     month,
     total,
-  })
-  );
-
+  }));
 
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
@@ -174,196 +150,211 @@ const deleteBudget = async (category: string) => {
   const currentDay = currentDate.getDate();
 
   const currentMonthSpending = transactions
-  .filter((transaction) => {
-    const transactionDate = new Date(transaction.date);
+    .filter((transaction) => {
+      const transactionDate = new Date(transaction.date);
 
-    return (
-      transactionDate.getMonth() === currentMonth &&
-      transactionDate.getFullYear() === currentYear
-    );
-  })
-  .reduce((total, transaction) => total + transaction.amount, 0);
+      return (
+        transactionDate.getMonth() === currentMonth &&
+        transactionDate.getFullYear() === currentYear
+      );
+    })
+    .reduce((total, transaction) => total + transaction.amount, 0);
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
   const projectedMonthlySpending =
-  currentDay > 0
-    ? (currentMonthSpending / currentDay) * daysInMonth
-    : currentMonthSpending;
-  
-  const COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#14b8a6",
-  ];
+    currentDay > 0
+      ? (currentMonthSpending / currentDay) * daysInMonth
+      : currentMonthSpending;
 
   const filteredTransactions = transactions.filter((transaction) => {
-  const matchesSearch = transaction.title
-    .toLowerCase()
-    .includes(searchTerm.toLowerCase());
+    const matchesSearch = transaction.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
 
-  const matchesCategory =
-    selectedCategory === "All" ||
-    transaction.category === selectedCategory;
+    const matchesCategory =
+      selectedCategory === "All" || transaction.category === selectedCategory;
 
-  return matchesSearch && matchesCategory;
+    return matchesSearch && matchesCategory;
   });
 
- const formattedDate = new Date().toLocaleDateString("en-US", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-});
+  const formattedDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
+  const budgetEntries = Object.entries(budgets);
+  const budgetLimitTotal = budgetEntries.reduce((total, [, limit]) => total + limit, 0);
+  const budgetSpentTotal = budgetEntries.reduce(
+    (total, [budgetCategory]) => total + (categoryTotals[budgetCategory] || 0),
+    0,
+  );
+  const overBudgetCount = budgetEntries.filter(
+    ([budgetCategory, limit]) => (categoryTotals[budgetCategory] || 0) > limit,
+  ).length;
+  const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
 
   return (
-   <div className="dashboard-layout">
-  <Sidebar />
+    <div className="dashboard-layout">
+      <Sidebar />
 
-  <div className="main-content">
-       <div className="app">
-     <div className="dashboard-header">
-  <div>
-    <h1 className="main-title">Smart Budget</h1>
+      <div className="main-content">
+        <div className="app">
+          <div className="dashboard-header">
+            <div>
+              <p className="eyebrow">Personal finance dashboard</p>
 
-    <p className="dashboard-subtitle">
-      Track spending, budgets, and monthly trends.
-    </p>
-  </div>
+              <h1 className="main-title">Smart Budget</h1>
 
-  <p className="dashboard-date">{formattedDate}</p>
-</div>
+              <p className="dashboard-subtitle">
+                Track spending, budget limits, and the monthly trend in one calm workspace.
+              </p>
+            </div>
 
-      {loading && <p className="status-message">Loading...</p>}
+            <p className="dashboard-date">{formattedDate}</p>
+          </div>
 
-      {error && <p className="error-message">{error}</p>}
+          {loading && <p className="status-message">Loading...</p>}
 
+          {error && <p className="error-message">{error}</p>}
 
-     <div className="nav-buttons">
-  <button onClick={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth" })}>
-    Overview
-  </button>
+          <div id="overview" className="top-grid">
+            <div className="summary-card">
+              <span className="metric-label">Total spending</span>
+              <strong>{currencyFormatter.format(totalSpending)}</strong>
+              <small>{transactions.length} transactions recorded</small>
+            </div>
 
-  <button onClick={() => document.getElementById("budgets")?.scrollIntoView({ behavior: "smooth" })}>
-    Budgets
-  </button>
+            <div className="prediction-card">
+              <span className="metric-label">Monthly outlook</span>
 
-  <button onClick={() => document.getElementById("analytics")?.scrollIntoView({ behavior: "smooth" })}>
-    Analytics
-  </button>
+              <div className="prediction-values">
+                <p>
+                  <span>Current</span>
+                  <strong>{currencyFormatter.format(currentMonthSpending)}</strong>
+                </p>
 
-  <button onClick={() => document.getElementById("transactions")?.scrollIntoView({ behavior: "smooth" })}>
-    Transactions
-  </button>
-</div>
+                <p>
+                  <span>Projected</span>
+                  <strong>{currencyFormatter.format(projectedMonthlySpending)}</strong>
+                </p>
+              </div>
 
-    <div className="top-grid">
-      <div id="overview" className="summary-card">
-        <h2>Total Spending</h2>
-        <p>${totalSpending}</p>
-      </div>
+              <span
+                className={
+                  projectedMonthlySpending > currentMonthSpending * 1.5
+                    ? "prediction-warning"
+                    : "prediction-safe"
+                }
+              >
+                {projectedMonthlySpending > currentMonthSpending * 1.5
+                  ? "High spending risk"
+                  : "Spending looks normal"}
+              </span>
+            </div>
 
-      <div className="prediction-card">
-        <h2>Spending Prediction</h2>
+            <div className="summary-card accent-card">
+              <span className="metric-label">Budget health</span>
+              <strong>
+                {budgetLimitTotal > 0
+                  ? `${Math.min((budgetSpentTotal / budgetLimitTotal) * 100, 999).toFixed(0)}%`
+                  : "0%"}
+              </strong>
+              <small>
+                {overBudgetCount > 0
+                  ? `${overBudgetCount} categories over limit`
+                  : "No categories over limit"}
+              </small>
+            </div>
 
-        <p>Current Month: ${currentMonthSpending.toFixed(2)}</p>
+            <div className="summary-card">
+              <span className="metric-label">Top category</span>
+              <strong>{topCategory ? topCategory[0] : "None yet"}</strong>
+              <small>
+                {topCategory
+                  ? currencyFormatter.format(topCategory[1])
+                  : "Add a transaction to see insights"}
+              </small>
+            </div>
+          </div>
 
-        <p>Projected Month: ${projectedMonthlySpending.toFixed(2)}</p>
+          <div className="middle-grid">
+            <BudgetSection
+              budgets={budgets}
+              categoryTotals={categoryTotals}
+              budgetCategory={budgetCategory}
+              budgetAmount={budgetAmount}
+              setBudgetCategory={setBudgetCategory}
+              setBudgetAmount={setBudgetAmount}
+              updateBudget={updateBudget}
+              deleteBudget={deleteBudget}
+            />
 
-       <span
-        className={
-         projectedMonthlySpending > currentMonthSpending * 1.5
-         ? "prediction-warning"
-          : "prediction-safe"
-        }
-        >
-        {projectedMonthlySpending > currentMonthSpending * 1.5
-        ? "High spending risk"
-        : "Spending looks normal"}
-      </span>
+            <AnalyticsSection categoryTotals={categoryTotals} />
+          </div>
+
+          <section className="section-panel">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">Quick add</span>
+                <h2>Add Transaction</h2>
+              </div>
+            </div>
+
+            <TransactionForm
+              title={title}
+              amount={amount}
+              category={category}
+              date={date}
+              setTitle={setTitle}
+              setAmount={setAmount}
+              setCategory={setCategory}
+              setDate={setDate}
+              addTransaction={addTransaction}
+            />
+          </section>
+
+          <ChartsSection chartData={chartData} lineChartData={lineChartData} />
+
+          <div id="transactions" className="transactions-section">
+            <h2>Recent Transactions</h2>
+
+            <div className="transaction-controls">
+              <input
+                type="text"
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="All">All Categories</option>
+
+                {Object.keys(categoryTotals).map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {filteredTransactions.length === 0 ? (
+              <p className="empty-message">No transactions found.</p>
+            ) : (
+              <TransactionTable
+                transactions={filteredTransactions}
+                deleteTransaction={deleteTransaction}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
-
-
-
-    <div className="middle-grid">
-      <BudgetSection
-        budgets={budgets}
-        categoryTotals={categoryTotals}
-        budgetCategory={budgetCategory}
-        budgetAmount={budgetAmount}
-        setBudgetCategory={setBudgetCategory}
-        setBudgetAmount={setBudgetAmount}
-        updateBudget={updateBudget}
-        deleteBudget={deleteBudget}
-      />
-
-      <AnalyticsSection categoryTotals={categoryTotals} />
-    </div>
-
-      <TransactionForm
-        title={title}
-        amount={amount}
-        category={category}
-        date={date}
-        setTitle={setTitle}
-        setAmount={setAmount}
-        setCategory={setCategory}
-        setDate={setDate}
-        addTransaction={addTransaction}
-      />
-
-
-      
-
-
-      <ChartsSection
-        chartData={chartData}
-        lineChartData={lineChartData}
-      />
-
-
-      <div id="transactions" className="transactions-section">
-        <h2>Recent Transactions</h2>
-
-        <div className="transaction-controls">
-  <input
-    type="text"
-    placeholder="Search transactions..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-
-  <select
-    value={selectedCategory}
-    onChange={(e) => setSelectedCategory(e.target.value)}
-  >
-    <option value="All">All Categories</option>
-
-    {Object.keys(categoryTotals).map((category) => (
-      <option key={category} value={category}>
-        {category}
-      </option>
-    ))}
-  </select>
-</div>
-
-{filteredTransactions.length === 0 ? (
-  <p className="empty-message">No transactions found.</p>
-) : (
-  <TransactionTable
-    transactions={filteredTransactions}
-    deleteTransaction={deleteTransaction}
-  />
-)}
-      </div>
-    </div>
-  </div>
-</div>
   );
 }
 

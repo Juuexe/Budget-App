@@ -25,6 +25,7 @@ function TransactionForm({
     <div className="form-container">
       <input
         type="text"
+        aria-label="Transaction title"
         placeholder="Transaction Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -32,6 +33,7 @@ function TransactionForm({
 
       <input
         type="number"
+        aria-label="Transaction amount"
         placeholder="Amount"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
@@ -39,6 +41,7 @@ function TransactionForm({
 
       <input
         type="text"
+        aria-label="Transaction category"
         placeholder="Category"
         value={category}
         onChange={(e) => setCategory(e.target.value)}
@@ -46,6 +49,7 @@ function TransactionForm({
 
       <input
         type="date"
+        aria-label="Transaction date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
       />
